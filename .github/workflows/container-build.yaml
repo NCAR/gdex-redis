@@ -18,22 +18,49 @@ on:
         type: string
         default: 'No comment provided'
 
+env:
+  REGISTRY_PATH: hub.k8s.ucar.edu/calie-gdex
+  IMAGE_NAME: gdex-redis
+  VERSION_NUMBER: ${{ github.run_id }}
+
 jobs:
   container-rebuild:
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-    
-      - name: 1) Log in to Harbor 
+
+      - name: 1) Log in to Harbor
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.CALIE_HARBOR_USERNAME }}
           password: ${{ secrets.CALIE_HARBOR_PASSWORD }}
-          registry: hub.k8s.ucar.edu/calie-gdex
-          
-      - name: 2) Checkout gdex-celery-redis-demo repository
+          registry: ${{ env.REGISTRY_PATH }}
+
+      - name: 2) Checkout gdex-redis repository
         uses: actions/checkout@v4
         with:
           ref: main
           ssh-key: ${{ secrets.ACTIONS_PUSH_KEY }}
-        
+
+      - name: 3) Build new container image
+        run: >
+          docker build --platform linux/amd64
+          --build-arg VERSION_NUMBER=${{ env.VERSION_NUMBER }}
+          -t ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}
+          --no-cache -f Dockerfile .
+
+      - name: Push image to Harbor
+        run: |
+          docker push ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}
+          docker tag ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }} ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update Helm chart image tag
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          sed -E "/image/s/${{ env.IMAGE_NAME }}:(.){1,}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}/" app-chart/values.yaml > app-chart/values.yaml.new
+          mv app-chart/values.yaml.new app-chart/values.yaml
+          git add app-chart/values.yaml
+          git commit -m "update image to v${{ env.VERSION_NUMBER }}"
+          git push
