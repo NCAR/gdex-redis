@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: hub.k8s.ucar.edu/calie-gdex/redis
-  tag: latest
+  tag: v36634296973
   pullPolicy: Always
 
 resources:
