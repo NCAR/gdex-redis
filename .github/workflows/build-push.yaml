@@ -51,13 +51,13 @@ jobs:
           -t ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}
           --no-cache -f Dockerfile .
 
-      - name: Push image to Harbor
+      - name: 4) Push image to Harbor
         run: |
           docker push ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}
           docker tag ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }} ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Update Helm chart image tag
+      - name: 5) Update Helm chart image tag
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
