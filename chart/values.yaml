@@ -1,0 +1,17 @@
+replicaCount: 1
+
+image:
+  repository: hub.k8s.ucar.edu/calie-gdex/redis
+  tag: latest
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: "0.5"
+    memory: 1Gi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+service:
+  port: 6379

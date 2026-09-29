@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - ".github/**"
       - ".gitignore"
-      - "app-chart/**"
+      - "chart/**"
       - "README.md"
       - "LICENSE"
   workflow_dispatch:
@@ -22,7 +22,7 @@ on:
 
 env:
   REGISTRY_PATH: hub.k8s.ucar.edu/calie-gdex
-  IMAGE_NAME: gdex-redis
+  IMAGE_NAME: redis
   VERSION_NUMBER: ${{ github.run_id }}
 
 jobs:
@@ -61,8 +61,7 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          sed -E "/image/s/${{ env.IMAGE_NAME }}:(.){1,}/${{ env.IMAGE_NAME }}:v${{ env.VERSION_NUMBER }}/" app-chart/values.yaml > app-chart/values.yaml.new
-          mv app-chart/values.yaml.new app-chart/values.yaml
-          git add app-chart/values.yaml
+          sed -i -E "s|tag: .*|tag: v${{ env.VERSION_NUMBER }}|" chart/values.yaml
+          git add chart/values.yaml
           git commit -m "update image to v${{ env.VERSION_NUMBER }}"
           git push
