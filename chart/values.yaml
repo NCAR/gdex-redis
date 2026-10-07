@@ -15,3 +15,19 @@ resources:
 
 service:
   port: 6379
+
+persistence:
+  enabled: true
+  # Use a pre-existing PVC instead of creating one
+  existingClaim: ""
+  # Empty string uses the cluster's default StorageClass
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+redis:
+  appendonly: "yes"
+  appendfsync: everysec
+  # Keep below resources.limits.memory; noeviction so queued tasks are never dropped
+  maxmemory: 1536mb
+  maxmemoryPolicy: noeviction

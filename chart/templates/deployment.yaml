@@ -7,6 +7,9 @@ metadata:
     app: redis
 spec:
   replicas: {{ .Values.replicaCount }}
+  # The data volume is ReadWriteOnce: stop the old pod before starting the new one
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: redis
@@ -15,12 +18,35 @@ spec:
       labels:
         app: redis
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
       - name: redis
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --dir
+        - /data
+        - --appendonly
+        - {{ .Values.redis.appendonly | quote }}
+        - --appendfsync
+        - {{ .Values.redis.appendfsync | quote }}
+        - --maxmemory
+        - {{ .Values.redis.maxmemory | quote }}
+        - --maxmemory-policy
+        - {{ .Values.redis.maxmemoryPolicy | quote }}
         ports:
         - containerPort: {{ .Values.service.port }}
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "-p", "{{ .Values.service.port }}", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "-p", "{{ .Values.service.port }}", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests:
             cpu: {{ .Values.resources.requests.cpu }}
@@ -28,3 +54,14 @@ spec:
           limits:
             cpu: {{ .Values.resources.limits.cpu }}
             memory: {{ .Values.resources.limits.memory }}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingClaim | default "redis-data" }}
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
